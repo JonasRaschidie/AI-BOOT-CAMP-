@@ -1,5 +1,7 @@
 # AI-BOOT-CAMP-
 enjoy using tensorflow, sklearn, confusion matrix and linear regression & learning to analyse and extrapolate :?
+
+
  <img src="https://github.com/Hamed-Aghapanah/BOOTCAMP_AI/blob/main/output-iris1-method2-Rashidi.png" width="1000"/>
  <img src="https://github.com/Hamed-Aghapanah/BOOTCAMP_AI/blob/main/output-question%202-third%20week-method%201-rashidi.png" width="1000"/>
  <img src="https://github.com/Hamed-Aghapanah/BOOTCAMP_AI/blob/main/output-question%202-third%20week-metod%201-%20Rashidi..png" width="1000"/>
