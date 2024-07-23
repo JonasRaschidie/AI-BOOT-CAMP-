@@ -1,0 +1,46 @@
+# @ Author : Jonas Rashidi
+import pandas as pd
+import numpy as np
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report, roc_auc_score, RocCurveDisplay, ConfusionMatrixDisplay
+from sklearn.feature_selection import RFE
+import matplotlib.pyplot as plt
+
+cancer = load_breast_cancer()
+data = pd.DataFrame(cancer.data, columns=cancer.feature_names)
+data['target'] = cancer.target
+X = data.drop('target', axis=1)
+y = data['target']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+svc = SVC(kernel='linear')
+rfe = RFE(estimator=svc, n_features_to_select=10, step=1)
+X_train_rfe = rfe.fit_transform(X_train, y_train)
+X_test_rfe = rfe.transform(X_test)
+param_grid = {'C': [0.1, 1, 10, 100], 'kernel': ['linear', 'rbf', 'poly', 'sigmoid']}
+grid_search = GridSearchCV(SVC(), param_grid, cv=5, scoring='accuracy')
+grid_search.fit(X_train_rfe, y_train)
+best_svm = grid_search.best_estimator_
+best_svm.fit(X_train_rfe, y_train)
+y_pred = best_svm.predict(X_test_rfe)
+accuracy = accuracy_score(y_test, y_pred)
+roc_auc = roc_auc_score(y_test, best_svm.decision_function(X_test_rfe))
+
+print(f"Accuracy: {accuracy:.2f}")
+print(f"ROC-AUC: {roc_auc:.2f}")
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred, target_names=cancer.target_names))
+
+cm = confusion_matrix(y_test, y_pred)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=cancer.target_names)
+disp.plot()
+roc_disp = RocCurveDisplay.from_estimator(best_svm, X_test_rfe, y_test)
+roc_disp.plot()
+
+plt.title('Confusion Matrix')
+plt.show()
