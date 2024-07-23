@@ -40,3 +40,52 @@ disp_knn.plot()
 plt.title('KNN Confusion Matrix')
 plt.show()
 
+
+# @ Author : Mohammad Amin Rashidi <Jonas Rashidi>
+from sklearn.svm import SVC
+from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler, label_binarize
+from sklearn.metrics import roc_auc_score, accuracy_score, confusion_matrix, classification_report, ConfusionMatrixDisplay
+import matplotlib.pyplot as plt
+import numpy as np
+
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),
+    ('pca', PCA(n_components=2)),  
+    ('svc', SVC(probability=True))  
+])
+param_grid_svm = {
+    'svc__kernel': ['linear', 'rbf', 'poly'],
+    'svc__C': [0.1, 1, 10, 100],
+    'svc__gamma': ['scale', 'auto'] 
+}
+grid_search_svm = GridSearchCV(pipeline, param_grid_svm, cv=5, scoring='accuracy')
+grid_search_svm.fit(X, y) 
+best_svm = grid_search_svm.best_estimator_
+y_pred_svm = best_svm.predict(X_test)
+y_proba_svm = best_svm.predict_proba(X_test)  
+y_test_bin = label_binarize(y_test, classes=np.unique(y))
+y_proba_svm_bin = np.array(y_proba_svm)  
+roc_auc_svm = roc_auc_score(y_test_bin, y_proba_svm_bin, multi_class='ovr')
+accuracy_svm = accuracy_score(y_test, y_pred_svm)
+print(f"SVM Accuracy: {accuracy_svm:.2f}")
+print(f"SVM ROC-AUC: {roc_auc_svm:.2f}")
+print("\nSVM Classification Report:")
+print(classification_report(y_test, y_pred_svm, target_names=iris.target_names))
+cm_svm = confusion_matrix(y_test, y_pred_svm, labels=best_svm.classes_)
+disp_svm = ConfusionMatrixDisplay(confusion_matrix=cm_svm, display_labels=iris.target_names)
+disp_svm.plot()
+X_pca = best_svm.named_steps['pca'].transform(X)
+plt.figure(figsize=(10, 6))
+for i, target_name in enumerate(iris.target_names):
+    plt.scatter(X_pca[y == i, 0], X_pca[y == i, 1], label=target_name)
+
+plt.title('PCA of Iris Dataset with SVM Decision Boundaries')
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.legend()
+plt.show()
+plt.title('SVM Confusion Matrix')
+plt.show()
+
