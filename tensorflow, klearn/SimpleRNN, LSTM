@@ -1,0 +1,52 @@
+# @ Author : Mohammad amin Rashidi <Jonas Rashidi>
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import SimpleRNN, LSTM, Dense
+from sklearn.preprocessing import MinMaxScaler
+import yfinance as yf
+
+ticker = 'AAPL'
+data = yf.download(ticker, start="2010-01-01", end="2020-01-01")
+data = data[['Close']] 
+data = data.values.astype('float32')
+scaler = MinMaxScaler(feature_range=(0, 1))
+data = scaler.fit_transform(data)
+train_size = int(len(data) * 0.67)
+test_size = len(data) - train_size
+train, test = data[0:train_size, :], data[train_size:len(data), :]
+def create_dataset(dataset, look_back=1):
+    dataX, dataY = [], []
+    for i in range(len(dataset) - look_back - 1):
+        a = dataset[i:(i + look_back), 0]
+        dataX.append(a)
+        dataY.append(dataset[i + look_back, 0])
+    return np.array(dataX), np.array(dataY)
+look_back = 3
+X_train, Y_train = create_dataset(train, look_back)
+X_test, Y_test = create_dataset(test, look_back)
+X_train = np.reshape(X_train, (X_train.shape[0], X_train.shape[1], 1))
+X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+
+model_combined = Sequential()
+model_combined.add(SimpleRNN(50, return_sequences=True, input_shape=(look_back, 1)))
+model_combined.add(LSTM(50))
+model_combined.add(Dense(1))
+model_combined.compile(loss='mean_squared_error', optimizer='adam')
+model_combined.fit(X_train, Y_train, epochs=6, batch_size=1, verbose=2)
+
+train_predict_combined = model_combined.predict(X_train)
+test_predict_combined = model_combined.predict(X_test)
+train_predict_combined = scaler.inverse_transform(train_predict_combined)
+test_predict_combined = scaler.inverse_transform(test_predict_combined)
+Y_train = scaler.inverse_transform([Y_train])
+Y_test = scaler.inverse_transform([Y_test])
+
+plt.plot(scaler.inverse_transform(data), label='Original Data _  (AAPL) stock price data')
+plt.plot(np.arange(look_back, look_back + len(train_predict_combined)), train_predict_combined, label='Train Predict _ 6 epochs')
+plt.plot(np.arange(len(train_predict_combined) + (look_back * 2) + 1, len(data) - 1), test_predict_combined, label='Test Predict')
+plt.legend()
+plt.show()
+
